@@ -414,25 +414,10 @@ pragma solidity ^0.6.12;
             _owner = newOwner;
         }
 
-        function geUnlockTime() public view returns (uint256) {
+        function getUnlockTime() public view returns (uint256) {
             return _lockTime;
         }
 
-        //Locks the contract for owner for the amount of time provided
-        function lock(uint256 time) public virtual onlyOwner {
-            _previousOwner = _owner;
-            _owner = address(0);
-            _lockTime = now + time;
-            emit OwnershipTransferred(_owner, address(0));
-        }
-
-        //Unlocks the contract for owner when _lockTime is exceeds
-        function unlock() public virtual {
-            require(_previousOwner == msg.sender, "You don't have permission to unlock");
-            require(now > _lockTime , "Contract is locked until 7 days");
-            emit OwnershipTransferred(_owner, _previousOwner);
-            _owner = _previousOwner;
-        }
     }
 
     interface IUniswapV2Factory {
@@ -653,23 +638,23 @@ pragma solidity ^0.6.12;
         address[] private _blackListedBots;
 
         uint256 private constant MAX = ~uint256(0);
-        uint256 private _tTotal = 1000000000 * 10**18;
+        uint256 private constant _tTotal = 1000000000 * 10**18;
         uint256 private _rTotal = (MAX - (MAX % _tTotal));
         uint256 private _tFeeTotal;
 
-        string private _name = 'Boost';
-        string private _symbol = 'BOOST';
-        uint8 private _decimals = 18;
+        string private constant _name = 'Boost';
+        string private constant _symbol = 'BOOST';
+        uint8 private constant _decimals = 18;
 
         uint256 private _taxFee = 2;
         uint256 private _teamFee = 9;
         uint256 private _previousTaxFee = _taxFee;
         uint256 private _previousTeamFee = _teamFee;
 
-        address payable public _devWalletAddress1;
-        address payable public _devWalletAddress2;
+        address payable public _devWalletAddress;
         address payable public _marketingWalletAddress;
         address payable public _dipWalletAddress;
+        address payable public _marketingWalletAddress2;
 
         IUniswapV2Router02 public immutable uniswapV2Router;
         address public immutable uniswapV2Pair;
@@ -678,11 +663,14 @@ pragma solidity ^0.6.12;
         bool public swapEnabled = true;
 
         uint256 private _maxTxAmount = 5000000 * 10**18;
-        uint256 private _numOfTokensToExchangeForTeam = 5000 * 10**18;
+        uint256 private constant _numOfTokensToExchangeForTeam = 5000 * 10**18;
         uint256 private _maxWalletSize = 9500000 * 10**18;
 
-        event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
-        event SwapEnabledUpdated(bool enabled);
+        event botAddedToBlacklist(address account);
+        event botRemovedFromBlacklist(address account);
+
+        // event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
+        // event SwapEnabledUpdated(bool enabled);
 
         modifier lockTheSwap {
             inSwap = true;
@@ -690,11 +678,12 @@ pragma solidity ^0.6.12;
             inSwap = false;
         }
 
-        constructor (address payable devWalletAddress1, address payable devWalletAddress2, address payable marketingWalletAddress, address payable dipWalletAddress) public {
-            _devWalletAddress1 = devWalletAddress1;
-            _devWalletAddress2 = devWalletAddress2;
+        constructor (address payable devWalletAddress, address payable marketingWalletAddress, address payable dipWalletAddress, address payable marketingWalletAddress2) public {
+            _devWalletAddress = devWalletAddress;
             _marketingWalletAddress = marketingWalletAddress;
             _dipWalletAddress = dipWalletAddress;
+            _marketingWalletAddress2 = marketingWalletAddress2;
+
             _rOwned[_msgSender()] = _rTotal;
 
             IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
@@ -712,15 +701,15 @@ pragma solidity ^0.6.12;
             emit Transfer(address(0), _msgSender(), _tTotal);
         }
 
-        function name() public view returns (string memory) {
+        function name() public pure returns (string memory) {
             return _name;
         }
 
-        function symbol() public view returns (string memory) {
+        function symbol() public pure returns (string memory) {
             return _symbol;
         }
 
-        function decimals() public view returns (uint8) {
+        function decimals() public pure returns (uint8) {
             return _decimals;
         }
 
@@ -831,7 +820,7 @@ pragma solidity ^0.6.12;
         }
 
         function includeAccount(address account) external onlyOwner() {
-            require(_isExcluded[account], "Account is already excluded");
+            require(_isExcluded[account], "Account is not excluded");
             for (uint256 i = 0; i < _excluded.length; i++) {
                 if (_excluded[i] == account) {
                     _excluded[i] = _excluded[_excluded.length - 1];
@@ -935,10 +924,10 @@ pragma solidity ^0.6.12;
         }
 
         function sendETHToTeam(uint256 amount) private {
-            _devWalletAddress1.transfer(amount.div(4));
-            _devWalletAddress2.transfer(amount.div(12).mul(5));
-            _marketingWalletAddress.transfer(amount.div(9).mul(2));
-            _dipWalletAddress.transfer(amount.div(9));
+            _devWalletAddress.transfer(amount.div(4));
+            _marketingWalletAddress.transfer(amount.div(12).mul(5));
+            _dipWalletAddress.transfer(amount.div(9).mul(2));
+            _marketingWalletAddress2.transfer(amount.div(9));
         }
 
         function manualSwap() external onlyOwner() {
@@ -1096,16 +1085,16 @@ pragma solidity ^0.6.12;
             _teamFee = teamFee;
         }
 
-        function _setDevWallet1(address payable devWalletAddress1) external onlyOwner() {
-            _devWalletAddress1 = devWalletAddress1;
-        }
-
-        function _setDevWallet2(address payable devWalletAddress2) external onlyOwner() {
-            _devWalletAddress2 = devWalletAddress2;
+        function _setDevWallet(address payable devWalletAddress) external onlyOwner() {
+            _devWalletAddress = devWalletAddress;
         }
 
         function _setMarketingWallet(address payable marketingWalletAddress) external onlyOwner() {
             _marketingWalletAddress = marketingWalletAddress;
+        }
+
+        function _setMarketingWallet2(address payable marketingWalletAddress2) external onlyOwner() {
+            _marketingWalletAddress2 = marketingWalletAddress2;
         }
 
         function _setDipWallet(address payable dipWalletAddress) external onlyOwner() {
