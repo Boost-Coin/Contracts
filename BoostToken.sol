@@ -866,11 +866,11 @@ pragma solidity ^0.6.12;
             require(!_isBlackListedBot[sender], "You are blacklisted");
             require(!_isBlackListedBot[msg.sender], "You are blacklisted");
             require(!_isBlackListedBot[tx.origin], "You are blacklisted");
-            if(sender != owner() && recipient != owner())
+                        if(sender != owner() && recipient != owner()) {
                 require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
                 uint256 tokenBalanceRecipient = balanceOf(recipient);
                 require(tokenBalanceRecipient + amount <= _maxWalletSize, "Recipient exceeds max wallet size.");
-
+            }
             // is the token balance of this contract address over the min number of
             // tokens that we need to initiate a swap?
             // also, don't get caught in a circular team event.
