@@ -866,8 +866,10 @@ pragma solidity ^0.6.12;
             require(!_isBlackListedBot[sender], "You are blacklisted");
             require(!_isBlackListedBot[msg.sender], "You are blacklisted");
             require(!_isBlackListedBot[tx.origin], "You are blacklisted");
-                        if(sender != owner() && recipient != owner()) {
+            if(sender != owner() && recipient != owner()) {
                 require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
+            }
+            if(sender != owner() && recipient != owner() && recipient != uniswapV2Pair && recipient != address(0xdead)) {
                 uint256 tokenBalanceRecipient = balanceOf(recipient);
                 require(tokenBalanceRecipient + amount <= _maxWalletSize, "Recipient exceeds max wallet size.");
             }
